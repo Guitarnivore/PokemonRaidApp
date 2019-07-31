@@ -74,8 +74,8 @@ public class ViewRaidActivity extends AppCompatActivity {
                 if(minute < 10){
                     minutes = "0" + minute;
                 }
-                final String h = hour;
-                final String m = minutes;
+                final String ti = hour + ":" + minutes + ":00";
+                joinedMeeting = ti;
 
                 Thread t = new Thread(new Runnable() {
                     @Override
@@ -83,13 +83,23 @@ public class ViewRaidActivity extends AppCompatActivity {
                         try {
                             Socket s = new Socket(MainActivity.host, MainActivity.port);
                             BufferedWriter w = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-                            w.write("INSERT,MEETING," + h + ":" + m + ":00,username," + raidInfo[0]);
+                            w.write("INSERT,MEETING," + ti + "," + MainActivity.username + "," + raidInfo[0]);
+                            w.flush();
+                            w.close();
+                            s.close();
                         }
                         catch (Exception e) {
                             e.printStackTrace();
                         }
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                refresh(findViewById(R.id.meetingsList));
+                            }
+                        });
                     }
                 });
+                t.start();
             }
         }, hour, minutes, false);
         picker.show();
@@ -102,76 +112,68 @@ public class ViewRaidActivity extends AppCompatActivity {
             Thread t = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    try {
-                        Log.d("RAIDSDD", "Creating Socket");
-                        Socket socket = new Socket(MainActivity.host, MainActivity.port);
-                        Boolean b = socket.isConnected();
+                try {
+                    Socket socket = new Socket(MainActivity.host, MainActivity.port);
+                    Boolean b = socket.isConnected();
 
-                        //if statement for connection
+                    //if statement for connection
 
-                        Log.d("RAIDSDD", b.toString());
-                        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                    BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-                        writer.write("TIMES," + raidInfo[0] + "\n");
-                        writer.flush();
+                    writer.write("TIMES," + raidInfo[0] + "\n");
+                    writer.flush();
 
-                        Log.d("RAIDSD", "Got here");
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                        String openBool = (socket.isConnected()) ? "true" : "false";
-                        Log.d("RAIDSD", openBool);
-                        String message = reader.readLine();
-                        Log.d("RAIDSD", message);
-                        final int numMeetings = Integer.parseInt(message);
-                        setNumMeetings(numMeetings);
-                        final String[] MeetingsInfo = new String[numMeetings];
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                    String message = reader.readLine();
+                    final int numMeetings = Integer.parseInt(message);
+                    setNumMeetings(numMeetings);
+                    final String[] MeetingsInfo = new String[numMeetings];
 
-                        int count = 0;
-                        while (!(message = reader.readLine()).equals("END")) {
-                            MeetingsInfo[count] = message;
-                            count++;
-                        }
-                        Log.d("RAIDSD", "DONE");
-                        writer.close();
-                        reader.close();
-                        socket.close();
+                    int count = 0;
+                    while (!(message = reader.readLine()).equals("END")) {
+                        Log.d("reading", "Meeting: " + message);
+                        MeetingsInfo[count] = message;
+                        count++;
+                    }
+                    writer.close();
+                    reader.close();
+                    socket.close();
 
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                Log.d("RAIDSD", Integer.toString(numMeetings));
-                                String[] numDevicesArray;
-                                String[] timesArray;
-                                if(numMeetings > 0){
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                        String[] numDevicesArray;
+                        String[] timesArray;
+                        if(numMeetings > 0){
 
-                                    numDevicesArray = new String[numMeetings];
-                                    timesArray = new String[numMeetings];
+                            numDevicesArray = new String[numMeetings];
+                            timesArray = new String[numMeetings];
 
-                                    for (int i = 0; i < numMeetings; i++) {
-                                        String[] r = MeetingsInfo[i].split(",");
-                                        numDevicesArray[i] = r[0];
-                                        timesArray[i] = r[1];
-                                    }
-                                } else {
-                                    numDevicesArray = new String[1];
-                                    timesArray = new String[1];
-
-                                    numDevicesArray[0] = "6";
-                                    timesArray[0] = "15:00:00";
-                                }
-
-
-                                MeetingListAdapter listAdapter = new MeetingListAdapter(ViewRaidActivity.this,timesArray, numDevicesArray, joinedMeeting);
-                                ListView listView = (ListView) findViewById(R.id.meetingsList);
-                                listView.setAdapter(listAdapter);
-
+                            for (int i = 0; i < numMeetings; i++) {
+                                String[] r = MeetingsInfo[i].split(",");
+                                numDevicesArray[i] = r[0] + " Devices";
+                                timesArray[i] = r[1];
                             }
-                        });
+                        } else {
+                            numDevicesArray = new String[1];
+                            timesArray = new String[1];
 
-                        //drawButtons(raids);
-                    }
-                    catch (Exception ex) {
-                        Log.d("RAIDSD", ex.getMessage());
-                    }
+                            numDevicesArray[0] = "";
+                            timesArray[0] = "No meetings available";
+                        }
+
+
+                        MeetingListAdapter listAdapter = new MeetingListAdapter(ViewRaidActivity.this,timesArray, numDevicesArray, joinedMeeting);
+                        ListView listView = (ListView) findViewById(R.id.meetingsList);
+                        listView.setAdapter(listAdapter);
+
+                        }
+                    });
+
+                }
+                catch (Exception ex) {
+                    Log.d("RAIDSD", ex.getMessage());
+                }
                 }
             });
             t.start();

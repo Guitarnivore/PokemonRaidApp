@@ -23,13 +23,15 @@ public class CustomListAdapter extends ArrayAdapter {
     private final Integer[] levels;
     private final String[] pokemon;
     private final String[] meeting;
+    private final String[] distances;
 
     public CustomListAdapter(Activity context, String[] nameArrayParam,
                              String[] infoArrayParam, Integer[] membersParam,
                              String[] gymNameArrayParam,
                              Integer[] levelsArrayparam,
                              String[] pokeArrayParam,
-                             String[] meetingParam){
+                             String[] meetingParam,
+                             String[] distancesParam){
         super(context, R.layout.list_item, nameArrayParam);
 
         this.context = context;
@@ -40,6 +42,7 @@ public class CustomListAdapter extends ArrayAdapter {
         this.levels = levelsArrayparam;
         this.pokemon = pokeArrayParam;
         this.meeting = meetingParam;
+        this.distances = distancesParam;
         //hello
 
     }
@@ -53,12 +56,14 @@ public class CustomListAdapter extends ArrayAdapter {
         TextView raidTitle = (TextView)rowView.findViewById(R.id.listTitle);
         TextView startTime = (TextView)rowView.findViewById(R.id.listDescription);
         TextView membersIn = (TextView)rowView.findViewById(R.id.membersIn);
+        TextView distance = (TextView) rowView.findViewById(R.id.distance);
         RatingBar level = (RatingBar)rowView.findViewById(R.id.RaidLevel);
 
         raidTitle.setText(gymArray[position] + " - " + pokemon[position]);
         startTime.setText(startTimeArray[position]);
         membersIn.setText(members[position] + " Raiders");
         level.setRating(levels[position]);
+        distance.setText(distances[position] + "m from you");
 
         rowView.setOnClickListener(new View.OnClickListener() {
             @Override

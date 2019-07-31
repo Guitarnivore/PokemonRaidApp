@@ -22,7 +22,6 @@ public class MeetingListAdapter extends ArrayAdapter {
     private final String[] times; //populate first 5 with level indicator stars? Add 5 to position when used
     private final String[] devices;
     private final String joinedMeeting;
-    String username = "cjb78";
 
     public MeetingListAdapter(Activity context, String[] timesParam, String[] devicesParam, String jM){
         super(context, R.layout.meetings_list_item, timesParam);
@@ -45,46 +44,42 @@ public class MeetingListAdapter extends ArrayAdapter {
         device.setText(devices[position]);
 
         ToggleButton tb = rowView.findViewById(R.id.JoinButton);
-        if (joinedMeeting.equals(times[position])) {
-            tb.setChecked(true);
-        } else {
-            tb.setChecked(false);
-        }
-        tb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                final boolean b = isChecked;
-                Thread t = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            Log.d("CHECKING", "trying");
-                            Socket s = new Socket(MainActivity.host, MainActivity.port);
-                            Log.d("CHECKING", "connected");
-                            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
-                            Log.d("CHECKING", "got writer");
-
-                            if (b) {
-                                Log.d("CHECKING", "checked");
-                                writer.write("INSERT,MEETING," + times[position] + ",username," + ViewRaidActivity.raidInfo[0]);
-                            }
-                            else {
-                                Log.d("CHECKING", "Unchecked");
-                                writer.write("DELETE,MEETING," + "username," + ViewRaidActivity.raidInfo[0]);
-                            }
-
-                            writer.flush();
-                            writer.close();
-                            s.close();
-                        }
-                        catch (Exception ex) {
-                            ex.printStackTrace();
-                        }
-                    }
-                });
-                t.start();
+        if (times[position].equals("No meetings available")) tb.setVisibility(View.INVISIBLE);
+        else {
+            if (joinedMeeting.equals(times[position])) {
+                tb.setChecked(true);
+            } else {
+                tb.setChecked(false);
             }
-        });
+            tb.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                    final boolean b = isChecked;
+                    Thread t = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                Socket s = new Socket(MainActivity.host, MainActivity.port);
+                                BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+
+                                if (b) {
+                                    writer.write("INSERT,MEETING," + times[position] + "," + MainActivity.username + "," + ViewRaidActivity.raidInfo[0]);
+                                } else {
+                                    writer.write("DELETE,MEETING," + MainActivity.username + "," + ViewRaidActivity.raidInfo[0]);
+                                }
+
+                                writer.flush();
+                                writer.close();
+                                s.close();
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+                            }
+                        }
+                    });
+                    t.start();
+                }
+            });
+        }
 
         return rowView;
 

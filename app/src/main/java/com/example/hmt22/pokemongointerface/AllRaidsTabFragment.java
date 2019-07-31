@@ -1,9 +1,16 @@
 package com.example.hmt22.pokemongointerface;
 
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Looper;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.app.AppCompatCallback;
 import android.util.Log;
@@ -20,11 +27,13 @@ import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
+import static com.example.hmt22.pokemongointerface.MainActivity.locationManager;
+
 
 /**
  * A simple {@link Fragment} subclass.
  */
-public class AllRaidsTabFragment extends Fragment {
+public class AllRaidsTabFragment extends Fragment implements LocationListener {
 
     String[] raidInfo;
     public static String[] raidIDs;
@@ -62,12 +71,6 @@ public class AllRaidsTabFragment extends Fragment {
 
     static int numRaids;
 
-    @Override
-    public void onViewCreated(View view, Bundle savedInstanceState){
-        refresh(view);
-
-    }
-
     private void refresh(View view) {
         final View v = view;
         //Ask for raids
@@ -85,7 +88,7 @@ public class AllRaidsTabFragment extends Fragment {
                         Log.d("RAIDSDD", b.toString());
                         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-                        writer.write("RAID_REFRESH,username\n");
+                        writer.write("RAID_REFRESH,"+ MainActivity.username + "\n");
                         writer.flush();
 
                         Log.d("RAIDSD", "Got here");
@@ -104,47 +107,81 @@ public class AllRaidsTabFragment extends Fragment {
                             count++;
                         }
                         Log.d("RAIDSD", "DONE");
+
                         writer.close();
                         reader.close();
                         socket.close();
 
+                        Log.d("RAIDSD", Integer.toString(AllRaidsTabFragment.numRaids));
+                        if(AllRaidsTabFragment.numRaids > 0){
+                            raidIDs = new String[AllRaidsTabFragment.numRaids];
+                            startTimes = new String[AllRaidsTabFragment.numRaids];
+                            numRaiders = new String[AllRaidsTabFragment.numRaids];
+                            raidLevels = new String[AllRaidsTabFragment.numRaids];
+                            gyms = new String[AllRaidsTabFragment.numRaids];
+                            pokemon = new String[AllRaidsTabFragment.numRaids];
+                            meetings = new String[AllRaidsTabFragment.numRaids];
+
+                            for (int i = 0; i < AllRaidsTabFragment.numRaids; i++) {
+                                String[] r = raidInfo[i].split(",");
+                                raidIDs[i] = r[0];
+                                startTimes[i] = r[1];
+                                numRaiders[i] = r[6];
+                                raidLevels[i] = r[3];
+                                gyms[i] = r[5];
+                                pokemon[i] = r[4];
+                                meetings[i] = r[7];
+                            }
+                        } else {
+                            raidIDs = new String[1];
+                            startTimes = new String[1];
+                            numRaiders = new String[1];
+                            raidLevels = new String[1];
+
+                            raidIDs[0] = ("No Raids Available");
+                            startTimes[0] = ("Select \"Add Raid\" to create a new raid");
+                            numRaiders[0] = "0";
+                            raidLevels[0] = "0";
+                            gyms[0] = "";
+                            pokemon[0] = "";
+                            meetings[0] = "";
+                        }
+
+                        Looper.prepare();
+                        final Location playerLoc = getPlayerLocation();
+                        Log.d("DEBUGGING", playerLoc.toString());
+
+                        final Location[] gymLocations = new Location[gyms.length];
+
+                        for (int i = 0; i < gyms.length; i++) {
+                            if (!gyms[i].equals("No Raids Available")) {
+                                socket = new Socket(MainActivity.host, MainActivity.port);
+
+                                writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+                                writer.write("SELECT,GYM," + "name = \"" + gyms[i] + "\"\n");
+                                writer.flush();
+
+                                reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                                String result = reader.readLine();
+                                Log.d("DEBUGGING", result);
+                                reader.close();
+
+                                //Extract gym location information
+                                String[] gymInfo = result.split(",");
+
+                                final Location gymLocation = new Location("PokeRaids");
+                                gymLocation.setLatitude(Double.parseDouble(gymInfo[1]));
+                                gymLocation.setLongitude(Double.parseDouble(gymInfo[2]));
+
+                                gymLocations[i] = gymLocation;
+
+                                socket.close();
+                            }
+                        }
+
                         getActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                Log.d("RAIDSD", Integer.toString(AllRaidsTabFragment.numRaids));
-                                if(AllRaidsTabFragment.numRaids > 0){
-                                    raidIDs = new String[AllRaidsTabFragment.numRaids];
-                                    startTimes = new String[AllRaidsTabFragment.numRaids];
-                                    numRaiders = new String[AllRaidsTabFragment.numRaids];
-                                    raidLevels = new String[AllRaidsTabFragment.numRaids];
-                                    gyms = new String[AllRaidsTabFragment.numRaids];
-                                    pokemon = new String[AllRaidsTabFragment.numRaids];
-                                    meetings = new String[AllRaidsTabFragment.numRaids];
-
-                                    for (int i = 0; i < AllRaidsTabFragment.numRaids; i++) {
-                                        String[] r = raidInfo[i].split(",");
-                                        raidIDs[i] = r[0];
-                                        startTimes[i] = r[1];
-                                        numRaiders[i] = r[6];
-                                        raidLevels[i] = r[3];
-                                        gyms[i] = r[5];
-                                        pokemon[i] = r[4];
-                                        meetings[i] = r[7];
-                                    }
-                                } else {
-                                    raidIDs = new String[1];
-                                    startTimes = new String[1];
-                                    numRaiders = new String[1];
-                                    raidLevels = new String[1];
-
-                                    raidIDs[0] = ("No Raids Available");
-                                    startTimes[0] = ("Select \"Add Raid\" to create a new raid");
-                                    numRaiders[0] = "0";
-                                    raidLevels[0] = "0";
-                                    gyms[0] = "";
-                                    pokemon[0] = "";
-                                    meetings[0] = "";
-                                }
 
                                 String[] pr = raidIDs;
                                 String[] pd = startTimes;
@@ -152,14 +189,16 @@ public class AllRaidsTabFragment extends Fragment {
                                 Integer[] pm = new Integer[AllRaidsTabFragment.numRaids];
                                 String[] pg = new String[AllRaidsTabFragment.numRaids];
                                 String[] pp = pokemon;
+                                String[] distances = new String[pg.length];
                                 for (int i = 0; i < AllRaidsTabFragment.numRaids; i++) {
                                     pl[i] = Integer.parseInt(raidLevels[i]);
                                     Log.d("RAIDSDC", "raidlevel " + Integer.toString(pl[i]));
                                     pm[i] = Integer.parseInt(numRaiders[i]);
                                     pg[i] = gyms[i];
+                                    distances[i] = Integer.toString(Math.round(playerLoc.distanceTo(gymLocations[i])));
                                 }
 
-                                listAdapter = new CustomListAdapter(getActivity(),pr, pd, pm, pg, pl, pp, meetings);
+                                listAdapter = new CustomListAdapter(getActivity(),pr, pd, pm, pg, pl, pp, meetings, distances);
                                 listView = (ListView) getView().findViewById(R.id.list);
                                 listView.setAdapter(listAdapter);
 
@@ -175,7 +214,6 @@ public class AllRaidsTabFragment extends Fragment {
                             }
                         });
 
-                        //drawButtons(raids);
                     }
                     catch (Exception ex) {
                         Log.d("RAIDSD", ex.getMessage());
@@ -187,13 +225,38 @@ public class AllRaidsTabFragment extends Fragment {
         catch (Exception ex) {
             ex.printStackTrace();
         }
-
-
     }
 
     private void setNumRaids(int i) {
         numRaids = i;
     }
 
+    @Override
+    public void onLocationChanged(Location location) {
+        if (location != null) {
+            Log.d("DEBUGGING", "Location changed");
+            locationManager.removeUpdates(this);
+        }
+    }
 
+    public Location getPlayerLocation() {
+        final LocationListener locListen = this;
+        try {
+            if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                //Get player location
+                final Location lastLocation;
+                locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locListen);
+                lastLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                return lastLocation;
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // Required functions
+    public void onProviderDisabled(String arg0) {}
+    public void onProviderEnabled(String arg0) {}
+    public void onStatusChanged(String arg0, int arg1, Bundle arg2) {}
 }
