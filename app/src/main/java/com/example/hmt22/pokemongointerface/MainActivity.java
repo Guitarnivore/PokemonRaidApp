@@ -8,7 +8,7 @@ import android.view.View;
 
 public class MainActivity extends AppCompatActivity {
 
-    public static String host = "cms-r1-28.cms.waikato.ac.nz";
+    public static String host = "cms-r1-27.cms.waikato.ac.nz";
     public static int port = 45525;
 
     @Override

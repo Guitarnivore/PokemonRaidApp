@@ -116,7 +116,7 @@ public class YourRaidsTabFragment extends Fragment {
                         Log.d("RAIDSD", openBool);
                         String message = reader.readLine();
                         Log.d("RAIDSD", message);
-                        int numRaids = Integer.parseInt(message);
+                        final int numRaids = Integer.parseInt(message);
                         setNumRaids(numRaids);
                         raidInfo = new String[numRaids];
 
@@ -158,14 +158,20 @@ public class YourRaidsTabFragment extends Fragment {
                                     startTimes = new String[1];
                                     numRaiders = new String[1];
                                     raidLevels = new String[1];
+                                    gyms = new String[1];
+                                    pokemon = new String[1];
+                                    meetings = new String[1];
+
 
                                     raidIDs[0] = ("No Raids Available");
                                     startTimes[0] = ("Select \"Add Raid\" to create a new raid");
                                     numRaiders[0] = "0";
                                     raidLevels[0] = "0";
-                                    gyms[0] = "";
+                                    gyms[0] = "No Raids Available";
                                     pokemon[0] = "";
                                     meetings[0] = "";
+
+                                    YourRaidsTabFragment.numRaids = 1;
                                 }
 
                                 String[] pr = raidIDs;
@@ -187,8 +193,6 @@ public class YourRaidsTabFragment extends Fragment {
 
                             }
                         });
-
-                        //drawButtons(raids);
                     }
                     catch (Exception ex) {
                         Log.d("RAIDSD", ex.getMessage());
