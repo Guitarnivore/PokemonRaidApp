@@ -62,20 +62,34 @@ public class ViewRaidActivity extends AppCompatActivity {
         final Calendar cal = Calendar.getInstance();
         int hour = cal.get(Calendar.HOUR_OF_DAY);
         int minutes = cal.get(Calendar.MINUTE);
-        TimePicker picker = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
+        TimePickerDialog picker = new TimePickerDialog(this, new TimePickerDialog.OnTimeSetListener() {
             @Override
             public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
                 String hour = Integer.toString(hourOfDay);
                 String minutes = Integer.toString(minute);
                 if(hourOfDay < 10){
                     hour = "0" + hourOfDay;
-
                 }
 
                 if(minute < 10){
                     minutes = "0" + minute;
-
                 }
+                final String h = hour;
+                final String m = minutes;
+
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Socket s = new Socket(MainActivity.host, MainActivity.port);
+                            BufferedWriter w = new BufferedWriter(new OutputStreamWriter(s.getOutputStream()));
+                            w.write("INSERT,MEETING," + h + ":" + m + ":00,username," + raidInfo[0]);
+                        }
+                        catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
             }
         }, hour, minutes, false);
         picker.show();
