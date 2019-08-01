@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
     public static boolean locationOK;
     public static LocationManager locationManager;
 
-    public static String host = "cms-r1-27.cms.waikato.ac.nz";
+    public static String host = "cms-r1-24.cms.waikato.ac.nz";
     public static int port = 45525;
     public static String username;
 

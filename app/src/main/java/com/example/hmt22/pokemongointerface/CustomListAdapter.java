@@ -63,7 +63,13 @@ public class CustomListAdapter extends ArrayAdapter {
         startTime.setText(startTimeArray[position]);
         membersIn.setText(members[position] + " Raiders");
         level.setRating(levels[position]);
-        distance.setText(distances[position] + "m from you");
+        if (!gymArray[position].equals("No Raids Available")) {
+            distance.setText(distances[position] + "m from you");
+        }
+        else {
+            distance.setText("");
+            level.setVisibility(View.INVISIBLE);
+        }
 
         rowView.setOnClickListener(new View.OnClickListener() {
             @Override
